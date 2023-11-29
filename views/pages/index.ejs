@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>City Manager</title>
+    <style>
+        table {
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+
+        td,
+        th {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .highlighted {
+            color: white;
+            background-color: green;
+        }
+    </style>
+</head>
+<body class="container">
+    <main>
+        <table>
+            <tr>
+                <th>City Name</th>
+                <th>City Area</th>
+                <th>City Population</th>
+                <th>City Density</th>
+            </tr>
+            <% data.forEach(function (city) { %>
+                <% if (city.population >= 1000000) { %>
+                    <tr class="highlighted">
+                <% } else { %>
+                    <tr>
+                <% } %>
+                    <td><%= city.name %></td>
+                    <td><%= city.area %></td>
+                    <td><%= city.population %></td>
+                    <td><%= city.density %></td>
+                </tr>
+            <% }); %>
+        </table>
+    </main>
+</body>
+</html>
