@@ -2,7 +2,6 @@
 
 const fs = require('fs');
 const express = require('express');
-const sortHelper = require('./helpers/sortHelpers');
 const cityHelper = require('./helpers/cityHelpers');
 const constants = require('./configs/constants');
 
@@ -20,40 +19,22 @@ app.get('/getData', (req, res) => {
 
         cityData = JSON.parse(data);
         cityData = cityHelper.removeDuplicates(cityData);
-
-        let updatedCityData = cityData.map(function(city) {
-            let cityAreaKm = city.area * 2.59; // Convert square miles to square kilometers.
-            let populationDensity = Math.round((city.population / cityAreaKm) * 100) / 100;
-
-            return {
-                name: city.name,
-                area: city.area,
-                population: city.population,
-                density: populationDensity
-            };
-        });
+        cityData = cityHelper.updateCitiesWithDensity(cityData);
 
         let sortKey = req.query.sortBy ? req.query.sortBy : '';
         if (sortKey) {
             let order = (req.query.order && req.query.order.toLocaleLowerCase() === constants.descending)
                 ? constants.descending : constants.ascending;
-            sortHelper.sortCities(updatedCityData, sortKey, order);
+            cityHelper.sortCities(cityData, sortKey, order);
         }
 
         let keyword = req.query.keyword ? req.query.keyword : '';
         if (keyword) {
-            let filteredCities = [];
-            updatedCityData.forEach((city) => {
-                if (city.name.toLowerCase().includes(keyword)) {
-                    filteredCities.push(city);
-                }
-            });
-
-            updatedCityData = filteredCities;
+            cityData = cityHelper.filterCitiesByKeyword(cityData, keyword);
         }
 
         res.render('pages/index.ejs', {
-            data: updatedCityData
+            data: cityData
         });
     });
 });
