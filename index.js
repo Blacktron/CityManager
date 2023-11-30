@@ -2,113 +2,74 @@
 
 const fs = require('fs');
 const express = require('express');
-const serverConfig = require('./configs/serverConfig');
-const sortHelper = require('./helpers/sortHelpers')
+const sortHelper = require('./helpers/sortHelpers');
+const cityHelper = require('./helpers/cityHelpers');
+const constants = require('./configs/constants');
 
 const app = express();
-// TODO Remove duplicates from city data
 
-let cityData;
-fs.readFile('./cities.json', 'utf8', (err, data) => {
-    if (err) {
-        throw err;
-    }
+app.set('view engine', 'ejs'); // Set the view to EJS.
 
-    cityData = JSON.parse(data);
-});
+app.use(express.json()); // Parse request body as JSON.
 
-app.set('view engine', 'ejs');
-
-app.use(express.json());
-
-// app.get('/getData/:sortBy/:order', (req, res) => {
-//     let updatedCityData = cityData.map(function(city) {
-//         let cityAreaKm = city.area * 1.6;
-//         let populationDensity = Math.round((city.population / cityAreaKm) * 100) / 100;
-//
-//         return {
-//             name: city.name,
-//             area: city.area,
-//             population: city.population,
-//             density: populationDensity
-//         };
-//     });
-//
-//     let sortKey = req.params['sortBy'];
-//     if (sortKey) {
-//         let order = req.params['order'].toLowerCase();
-//         if (order === 'descending') {
-//             sortHelper.sortCities(updatedCityData, sortKey, order);
-//         } else {
-//             sortHelper.sortCities(updatedCityData, sortKey);
-//         }
-//     }
-//
-//     res.send(updatedCityData);
-// });
-
-let newCityData;
-app.get('/', (req, res) => {
-    newCityData = cityData.map(function(city) {
-        let cityAreaKm = city.area * 1.6;
-        let populationDensity = Math.round((city.population / cityAreaKm) * 100) / 100;
-
-        return {
-            name: city.name,
-            area: city.area,
-            population: city.population,
-            density: populationDensity
-        };
-    });
-
-    // res.send(newCityData);
-    res.render('pages/index.ejs', {
-        data: newCityData,
-        test: "test"
-    });
-});
-
-app.get('/sort', (req, res) => {
-    let sortKey;
-    if (req.query.sortBy) {
-        sortKey = req.query.sortBy;
-    }
-
-    if (sortKey) {
-        if (req.query.order && req.query.order.toLocaleLowerCase() === 'descending') {
-            sortHelper.sortCities(newCityData, sortKey, req.query.order);
-        } else {
-            sortHelper.sortCities(newCityData, sortKey);
+app.get('/getData', (req, res) => {
+    fs.readFile('./cities.json', constants.utf8, (err, data) => {
+        if (err) {
+            throw err;
         }
-    } else {
-        return newCityData;
-    }
 
-    res.send(newCityData)
-});
+        cityData = JSON.parse(data);
+        cityData = cityHelper.removeDuplicates(cityData);
 
-app.get('/filter/:keyword', (req, res) => {
-    let filteredCities = [];
-    let keyword = req.params['keyword'];
-    if (keyword) {
-        newCityData.forEach((city) => {
-            if (city.name.includes(keyword)) {
-                filteredCities.push(city);
-            }
+        let updatedCityData = cityData.map(function(city) {
+            let cityAreaKm = city.area * 2.59; // Convert square miles to square kilometers.
+            let populationDensity = Math.round((city.population / cityAreaKm) * 100) / 100;
+
+            return {
+                name: city.name,
+                area: city.area,
+                population: city.population,
+                density: populationDensity
+            };
         });
-    }
 
-    res.send(filteredCities);
+        let sortKey = req.query.sortBy ? req.query.sortBy : '';
+        if (sortKey) {
+            let order = (req.query.order && req.query.order.toLocaleLowerCase() === constants.descending)
+                ? constants.descending : constants.ascending;
+            sortHelper.sortCities(updatedCityData, sortKey, order);
+        }
+
+        let keyword = req.query.keyword ? req.query.keyword : '';
+        if (keyword) {
+            let filteredCities = [];
+            updatedCityData.forEach((city) => {
+                if (city.name.toLowerCase().includes(keyword)) {
+                    filteredCities.push(city);
+                }
+            });
+
+            updatedCityData = filteredCities;
+        }
+
+        res.render('pages/index.ejs', {
+            data: updatedCityData
+        });
+    });
 });
 
 app.post('/addCity', (req, res) => {
     if (req.body.name && req.body.area && req.body.population) {
         let newCity = req.body;
-        fs.readFile('./cities.json', 'utf8', (err, data) => {
+        fs.readFile('./cities.json', constants.utf8, (err, data) => {
             if (err) throw err;
 
             const cityData = JSON.parse(data);
             cityData.push(newCity);
+            /*
+                Further improvement - only add the new city if
+                it's not already present in the file
+             */
             fs.writeFile('./cities.json', JSON.stringify(cityData), (err) => {
                 if (err) throw err;
             });
@@ -120,9 +81,7 @@ app.post('/addCity', (req, res) => {
     }
 });
 
-app.listen(serverConfig.listeningPort, (err) => {
+app.listen(constants.listeningPort, (err) => {
     if (err) throw err;
-    console.log(`Server is running on port ${serverConfig.listeningPort}`);
+    console.log(`Server is running on port ${constants.listeningPort}`);
 });
-
-

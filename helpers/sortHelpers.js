@@ -1,4 +1,4 @@
-function sortCities(arr, propertyName, order = 'ascending') {
+function sortCities(arr, propertyName, order) {
     const sortedCities = arr.sort((a, b) => {
         if (a[propertyName] < b[propertyName]) {
             return -1;
