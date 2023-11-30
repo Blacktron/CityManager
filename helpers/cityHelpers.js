@@ -22,12 +22,6 @@ function updateCitiesWithDensity(arr) {
         let cityAreaKm = city.area * 2.59; // Convert square miles to square kilometers.
         let populationDensity = Math.round((city.population / cityAreaKm) * 100) / 100;
         city.density = populationDensity;
-        // return {
-        //     name: city.name,
-        //     area: city.area,
-        //     population: city.population,
-        //     density: populationDensity
-        // };
     });
 
     return arr;
